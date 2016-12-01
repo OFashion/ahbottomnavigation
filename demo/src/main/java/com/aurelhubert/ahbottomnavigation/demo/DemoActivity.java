@@ -1,6 +1,8 @@
 package com.aurelhubert.ahbottomnavigation.demo;
 
 import android.animation.Animator;
+import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.design.widget.FloatingActionButton;
@@ -8,7 +10,6 @@ import android.support.design.widget.Snackbar;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.view.animation.LinearOutSlowInInterpolator;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
 import android.view.View;
 import android.view.animation.OvershootInterpolator;
 
@@ -28,6 +29,7 @@ public class DemoActivity extends AppCompatActivity {
 	private ArrayList<AHBottomNavigationItem> bottomNavigationItems = new ArrayList<>();
 	private boolean useMenuResource = true;
 	private int[] tabColors;
+	private Handler handler = new Handler();
 
 	// UI
 	private AHBottomNavigationViewPager viewPager;
@@ -37,8 +39,17 @@ public class DemoActivity extends AppCompatActivity {
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		boolean enabledTranslucentNavigation = getSharedPreferences("shared", Context.MODE_PRIVATE)
+				.getBoolean("translucentNavigation", false);
+		setTheme(enabledTranslucentNavigation ? R.style.AppTheme_TranslucentNavigation : R.style.AppTheme);
 		setContentView(R.layout.activity_home);
 		initUI();
+	}
+
+	@Override
+	protected void onDestroy() {
+		super.onDestroy();
+		handler.removeCallbacksAndMessages(null);
 	}
 
 	/**
@@ -65,6 +76,9 @@ public class DemoActivity extends AppCompatActivity {
 
 			bottomNavigation.addItems(bottomNavigationItems);
 		}
+
+		bottomNavigation.manageFloatingActionButtonBehavior(floatingActionButton);
+		bottomNavigation.setTranslucentNavigationEnabled(true);
 
 		bottomNavigation.setOnTabSelectedListener(new AHBottomNavigation.OnTabSelectedListener() {
 			@Override
@@ -162,11 +176,13 @@ public class DemoActivity extends AppCompatActivity {
 			}
 		});
 
+		/*
 		bottomNavigation.setOnNavigationPositionListener(new AHBottomNavigation.OnNavigationPositionListener() {
 			@Override public void onPositionChange(int y) {
 				Log.d("DemoActivity", "BottomNavigation Position: " + y);
 			}
 		});
+		*/
 
 		viewPager.setOffscreenPageLimit(4);
 		adapter = new DemoViewPagerAdapter(getSupportFragmentManager());
@@ -174,7 +190,6 @@ public class DemoActivity extends AppCompatActivity {
 
 		currentFragment = adapter.getCurrentFragment();
 
-		final Handler handler = new Handler();
 		handler.postDelayed(new Runnable() {
 			@Override
 			public void run() {
@@ -187,6 +202,7 @@ public class DemoActivity extends AppCompatActivity {
 				bottomNavigation.setNotification(notification, 1);
 				Snackbar.make(bottomNavigation, "Snackbar with bottom navigation",
 						Snackbar.LENGTH_SHORT).show();
+
 			}
 		}, 3000);
 
@@ -263,7 +279,16 @@ public class DemoActivity extends AppCompatActivity {
 	 * Show or hide selected item background
 	 */
 	public void setForceTitleHide(boolean forceTitleHide) {
-		bottomNavigation.setForceTitlesHide(forceTitleHide);
+		AHBottomNavigation.TitleState state = forceTitleHide ? AHBottomNavigation.TitleState.ALWAYS_HIDE : AHBottomNavigation.TitleState.ALWAYS_SHOW;
+		bottomNavigation.setTitleState(state);
+	}
+
+	/**
+	 * Reload activity
+	 */
+	public void reload() {
+		startActivity(new Intent(this, DemoActivity.class));
+		finish();
 	}
 
 	/**
